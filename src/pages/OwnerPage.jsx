@@ -19,6 +19,8 @@ import {
   generateId,
   copyToClipboard,
   formatTime,
+  resetOwnerData,
+  regenerateLinkId,
 } from '../lib/utils'
 
 const tabs = [
@@ -159,7 +161,7 @@ export default function OwnerPage() {
   }
 
   const handleCloseLink = async () => {
-    if (!window.confirm('确认关闭后任何人无法访问该链接，访客记录保留，不可恢复。确定要关闭吗？')) return
+    if (!window.confirm('确认关闭后任何人无法访问该链接，访客记录保留。确定要关闭吗？')) return
 
     setSaving(true)
     try {
@@ -171,6 +173,64 @@ export default function OwnerPage() {
       }
     } catch (err) {
       console.error('Close link error:', err)
+      alert('操作失败，请重试')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleOpenLink = async () => {
+    if (!window.confirm('确定要重新开启分享链接吗？')) return
+
+    setSaving(true)
+    try {
+      const result = await updateOwner(owner.id, { link_status: 'active' })
+      if (result) {
+        setLinkStatus('active')
+        setOwner(result)
+        alert('链接已重新开启')
+      }
+    } catch (err) {
+      console.error('Open link error:', err)
+      alert('操作失败，请重试')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleRegenerateLink = async () => {
+    if (!window.confirm('生成新链接后，旧链接将立即失效，访客记录保留。确定要生成新链接吗？')) return
+
+    setSaving(true)
+    try {
+      const result = await regenerateLinkId(owner.id)
+      if (result) {
+        setLinkId(result.newLinkId)
+        setLinkStatus('active')
+        setOwner(result)
+        alert('新链接已生成')
+      }
+    } catch (err) {
+      console.error('Regenerate link error:', err)
+      alert('操作失败，请重试')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleResetData = async () => {
+    if (!window.confirm('确定要清空所有资料吗？访客记录会保留，清空后可以重新填写。确定要继续吗？')) return
+
+    setSaving(true)
+    try {
+      const result = await resetOwnerData(owner.id)
+      if (result) {
+        fillFormData(result)
+        setOwner(result)
+        alert('资料已清空，请重新填写')
+      }
+    } catch (err) {
+      console.error('Reset data error:', err)
       alert('操作失败，请重试')
     } finally {
       setSaving(false)
@@ -235,12 +295,25 @@ export default function OwnerPage() {
                   <Button block onClick={handleCopyLink}>
                     📋 一键复制链接
                   </Button>
-                  <Button variant="secondary" block onClick={handleCloseLink} disabled={saving}>
-                    关闭分享链接
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button variant="secondary" block onClick={handleCloseLink} disabled={saving}>
+                      关闭链接
+                    </Button>
+                    <Button variant="outline" block onClick={handleRegenerateLink} disabled={saving}>
+                      生成新链接
+                    </Button>
+                  </div>
                 </>
               ) : (
-                <p className="text-sm text-text-muted">当前链接已失效</p>
+                <>
+                  <p className="text-sm text-text-muted mb-3">当前链接已失效</p>
+                  <Button variant="primary" block onClick={handleOpenLink} disabled={saving}>
+                    重新开启链接
+                  </Button>
+                  <Button variant="outline" block onClick={handleRegenerateLink} disabled={saving} className="mt-2">
+                    生成新链接
+                  </Button>
+                </>
               )}
             </Card>
           )}
@@ -300,6 +373,11 @@ export default function OwnerPage() {
           <Button block onClick={handleSave} disabled={saving}>
             {saving ? '保存中...' : '保 存 资 料'}
           </Button>
+          {owner?.id && (
+            <Button variant="danger" block onClick={handleResetData} disabled={saving} className="mt-3">
+              清空资料
+            </Button>
+          )}
         </div>
       )}
 
