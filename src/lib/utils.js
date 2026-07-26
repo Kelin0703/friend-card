@@ -166,3 +166,47 @@ export const updateVisitorStatus = async (visitorId, status) => {
   }
   return data
 }
+
+export const resetOwnerData = async (ownerId) => {
+  const { data, error } = await supabase
+    .from('owners')
+    .update({
+      nickname: '',
+      gender: '',
+      wechat: '',
+      bio: '',
+      expectation: '',
+      photos: [],
+      link_status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', ownerId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Reset owner data error:', error)
+    return null
+  }
+  return data
+}
+
+export const regenerateLinkId = async (ownerId) => {
+  const newLinkId = generateId().slice(0, 8)
+  const { data, error } = await supabase
+    .from('owners')
+    .update({
+      link_id: newLinkId,
+      link_status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', ownerId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Regenerate link error:', error)
+    return null
+  }
+  return { ...data, newLinkId }
+}
