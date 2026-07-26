@@ -7,6 +7,7 @@ import Modal from '../components/Modal'
 import Input from '../components/Input'
 import TextArea from '../components/TextArea'
 import RadioGroup from '../components/RadioGroup'
+import PhotoUpload from '../components/PhotoUpload'
 import {
   getOwnerByLinkId,
   getVisitorRecord,
@@ -32,6 +33,8 @@ export default function PublicCardPage() {
   const [gender, setGender] = useState('')
   const [wechat, setWechat] = useState('')
   const [bio, setBio] = useState('')
+  const [expectation, setExpectation] = useState('')
+  const [photos, setPhotos] = useState([])
 
   useEffect(() => {
     loadData()
@@ -80,6 +83,8 @@ export default function PublicCardPage() {
         gender,
         wechat: wechat.trim(),
         bio: bio.trim(),
+        expectation: expectation.trim(),
+        photos,
         status: 'pending',
       }
 
@@ -296,6 +301,24 @@ export default function PublicCardPage() {
           onChange={setBio}
           rows={3}
         />
+        <TextArea
+          label="交友期许"
+          placeholder="你期待什么样的朋友？"
+          value={expectation}
+          onChange={setExpectation}
+          rows={3}
+        />
+        <div className="mb-5">
+          <label className="block mb-2 text-text">
+            个人照片（最多3张）
+          </label>
+          <PhotoUpload
+            photos={photos}
+            onChange={setPhotos}
+            maxPhotos={3}
+            ownerId={`visitor_${getVisitorId()}`}
+          />
+        </div>
         <div className="text-xs text-text-muted mb-4 leading-relaxed">
           提交后主人会看到你的信息，审核通过后你才能看到主人的完整资料哦~
         </div>

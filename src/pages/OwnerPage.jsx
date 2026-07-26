@@ -406,9 +406,33 @@ export default function OwnerPage() {
                     </div>
                     <StatusTag status={visitor.status} />
                   </div>
-                  <p className="text-sm text-text-muted mb-4 leading-relaxed">
+                  <p className="text-sm text-text-muted mb-3 leading-relaxed">
                     {visitor.bio}
                   </p>
+                  {visitor.expectation && (
+                    <div className="mb-3">
+                      <div className="text-xs text-text-muted mb-1">交友期许</div>
+                      <p className="text-sm text-text-muted leading-relaxed">
+                        {visitor.expectation}
+                      </p>
+                    </div>
+                  )}
+                  {visitor.photos && visitor.photos.length > 0 && (
+                    <div className="mb-3">
+                      <div className="text-xs text-text-muted mb-2">个人照片</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {visitor.photos.map((photo, index) => (
+                          <div key={index} className="aspect-square rounded-lg overflow-hidden">
+                            <img
+                              src={photo}
+                              alt={`照片${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="text-xs text-text-muted mb-3">
                     微信号：<span className="text-text font-mono">{visitor.wechat}</span>
                   </div>
