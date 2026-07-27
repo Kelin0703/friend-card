@@ -16,6 +16,7 @@ import {
   getVisitorId,
   copyToClipboard,
   checkWechatDuplicate,
+  updateVisitorInfo,
 } from '../lib/utils'
 
 const genderOptions = [
@@ -29,6 +30,7 @@ export default function PublicCardPage() {
   const [owner, setOwner] = useState(null)
   const [visitorRecord, setVisitorRecord] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const [nickname, setNickname] = useState('')
@@ -126,6 +128,46 @@ export default function PublicCardPage() {
     } catch (err) {
       console.error('Submit error:', err)
       alert('提交失败，请重试')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const fillFormFromRecord = (record) => {
+    setNickname(record.nickname || '')
+    setGender(record.gender || '')
+    setWechat(record.wechat || '')
+    setBio(record.bio || '')
+    setExpectation(record.expectation || '')
+    setPhotos(record.photos || [])
+  }
+
+  const handleUpdate = async () => {
+    if (!validateForm() || !owner || !visitorRecord) return
+
+    setSubmitting(true)
+    try {
+      const visitorId = getVisitorId()
+      const visitorData = {
+        nickname: nickname.trim(),
+        gender,
+        wechat: wechat.trim(),
+        bio: bio.trim(),
+        expectation: expectation.trim(),
+        photos,
+      }
+
+      const result = await updateVisitorInfo(owner.id, visitorId, visitorData)
+      if (result) {
+        setVisitorRecord(result)
+        setShowEditModal(false)
+        alert('修改成功！')
+      } else {
+        alert('修改失败，请重试')
+      }
+    } catch (err) {
+      console.error('Update error:', err)
+      alert('修改失败，请重试')
     } finally {
       setSubmitting(false)
     }
@@ -335,6 +377,17 @@ export default function PublicCardPage() {
                   </div>
                 )}
               </div>
+              <Button
+                variant="outline"
+                block
+                onClick={() => {
+                  fillFormFromRecord(visitorRecord)
+                  setShowEditModal(true)
+                }}
+                className="mt-4"
+              >
+                修改信息
+              </Button>
             </Card>
           )}
         </div>
@@ -402,6 +455,65 @@ export default function PublicCardPage() {
         </div>
         <Button block onClick={handleSubmit} disabled={submitting}>
           {submitting ? '提交中...' : '提 交 申 请'}
+        </Button>
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="修改你的信息"
+      >
+        <Input
+          label="你的昵称"
+          required
+          placeholder="请输入你的昵称"
+          value={nickname}
+          onChange={setNickname}
+        />
+        <RadioGroup
+          label="性别"
+          required
+          options={genderOptions}
+          value={gender}
+          onChange={setGender}
+        />
+        <Input
+          label="微信号"
+          required
+          placeholder="请输入你的微信号"
+          value={wechat}
+          onChange={setWechat}
+        />
+        <TextArea
+          label="自我介绍"
+          placeholder="简单介绍一下自己吧"
+          value={bio}
+          onChange={setBio}
+          rows={3}
+        />
+        <TextArea
+          label="交友期许"
+          placeholder="你期待什么样的朋友？"
+          value={expectation}
+          onChange={setExpectation}
+          rows={3}
+        />
+        <div className="mb-5">
+          <label className="block mb-2 text-text">
+            个人照片（最多3张）
+          </label>
+          <PhotoUpload
+            photos={photos}
+            onChange={setPhotos}
+            maxPhotos={3}
+            ownerId={`visitor_${getVisitorId()}`}
+          />
+        </div>
+        <div className="text-xs text-text-muted mb-4 leading-relaxed">
+          修改后主人会重新看到你的信息~
+        </div>
+        <Button block onClick={handleUpdate} disabled={submitting}>
+          {submitting ? '保存中...' : '保 存 修 改'}
         </Button>
       </Modal>
     </div>
