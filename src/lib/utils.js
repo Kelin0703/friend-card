@@ -52,18 +52,35 @@ export const copyToClipboard = async (text) => {
   }
 }
 
+export const getLinkByLinkId = async (linkId) => {
+  const { data, error } = await supabase
+    .from('links')
+    .select('*')
+    .eq('link_id', linkId)
+    .single()
+
+  if (error) {
+    console.error('Get link error:', error)
+    return null
+  }
+  return data
+}
+
 export const getOwnerByLinkId = async (linkId) => {
+  const link = await getLinkByLinkId(linkId)
+  if (!link) return null
+
   const { data, error } = await supabase
     .from('owners')
     .select('*')
-    .eq('link_id', linkId)
+    .eq('id', link.owner_id)
     .single()
 
   if (error) {
     console.error('Get owner error:', error)
     return null
   }
-  return data
+  return { ...data, link_status: link.status }
 }
 
 export const getVisitorRecord = async (ownerId, visitorId) => {
@@ -126,6 +143,25 @@ export const updateVisitorInfo = async (ownerId, visitorId, visitorData) => {
   return data
 }
 
+export const createLink = async (ownerId) => {
+  const linkId = generateId().slice(0, 8)
+  const { data, error } = await supabase
+    .from('links')
+    .insert({
+      owner_id: ownerId,
+      link_id: linkId,
+      status: 'active',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Create link error:', error)
+    return null
+  }
+  return data
+}
+
 export const createOwner = async (ownerData) => {
   const { data, error } = await supabase
     .from('owners')
@@ -137,7 +173,13 @@ export const createOwner = async (ownerData) => {
     console.error('Create owner error:', error)
     return null
   }
-  return data
+
+  const link = await createLink(data.id)
+  if (!link) {
+    return data
+  }
+
+  return { ...data, link_id: link.link_id }
 }
 
 export const updateOwner = async (ownerId, ownerData) => {
@@ -208,7 +250,6 @@ export const resetOwnerData = async (ownerId) => {
       bio: '',
       expectation: '',
       photos: [],
-      link_status: 'active',
       updated_at: new Date().toISOString(),
     })
     .eq('id', ownerId)
@@ -222,22 +263,36 @@ export const resetOwnerData = async (ownerId) => {
   return data
 }
 
-export const regenerateLinkId = async (ownerId) => {
-  const newLinkId = generateId().slice(0, 8)
+export const getLinksByOwner = async (ownerId) => {
   const { data, error } = await supabase
-    .from('owners')
-    .update({
-      link_id: newLinkId,
-      link_status: 'active',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', ownerId)
+    .from('links')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Get links error:', error)
+    return []
+  }
+  return data || []
+}
+
+export const updateLinkStatus = async (linkId, status) => {
+  const { data, error } = await supabase
+    .from('links')
+    .update({ status })
+    .eq('link_id', linkId)
     .select()
     .single()
 
   if (error) {
-    console.error('Regenerate link error:', error)
+    console.error('Update link status error:', error)
     return null
   }
-  return { ...data, newLinkId }
+  return data
+}
+
+export const regenerateLinkId = async (ownerId) => {
+  const link = await createLink(ownerId)
+  return link
 }
