@@ -110,6 +110,22 @@ export const submitVisitorInfo = async (visitorData) => {
   return data
 }
 
+export const updateVisitorInfo = async (ownerId, visitorId, visitorData) => {
+  const { data, error } = await supabase
+    .from('visitors')
+    .update(visitorData)
+    .eq('owner_id', ownerId)
+    .eq('visitor_id', visitorId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Update visitor info error:', error)
+    return null
+  }
+  return data
+}
+
 export const createOwner = async (ownerData) => {
   const { data, error } = await supabase
     .from('owners')
