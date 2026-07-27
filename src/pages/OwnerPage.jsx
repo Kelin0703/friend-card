@@ -8,6 +8,7 @@ import PhotoUpload from '../components/PhotoUpload'
 import Button from '../components/Button'
 import Card from '../components/Card'
 import StatusTag from '../components/StatusTag'
+import ImagePreview from '../components/ImagePreview'
 import {
   getOwnerId,
   setOwnerId,
@@ -423,7 +424,7 @@ export default function OwnerPage() {
                       <div className="grid grid-cols-3 gap-2">
                         {visitor.photos.map((photo, index) => (
                           <div key={index} className="aspect-square rounded-lg overflow-hidden">
-                            <img
+                            <ImagePreview
                               src={photo}
                               alt={`照片${index + 1}`}
                               className="w-full h-full object-cover"
