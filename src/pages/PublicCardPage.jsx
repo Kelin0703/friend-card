@@ -8,6 +8,7 @@ import Input from '../components/Input'
 import TextArea from '../components/TextArea'
 import RadioGroup from '../components/RadioGroup'
 import PhotoUpload from '../components/PhotoUpload'
+import ImagePreview from '../components/ImagePreview'
 import {
   getOwnerByLinkId,
   getVisitorRecord,
@@ -61,6 +62,11 @@ export default function PublicCardPage() {
     }
     if (!gender) {
       alert('请选择性别')
+      return false
+    }
+    // 性别限制：仅限异性提交
+    if (owner?.gender && gender === owner.gender) {
+      alert('仅限异性提交信息互换')
       return false
     }
     if (!wechat.trim()) {
@@ -231,7 +237,7 @@ export default function PublicCardPage() {
                 <div className="inline-block px-5 py-2 bg-status-pending-bg text-status-pending-text rounded-full text-sm font-medium mb-4">
                   ⏳ 待主人审核通过后即可查看完整资料
                 </div>
-                <p className="text-sm text-text-muted leading-relaxed">
+                <p className="text-sm text-text-muted leading-relaxed mb-4">
                   你的信息已提交，请耐心等待主人审核~
                 </p>
               </>
@@ -259,6 +265,57 @@ export default function PublicCardPage() {
               </>
             )}
           </Card>
+          
+          {/* 访客自己提交的信息展示 */}
+          {visitorRecord && (isPending || isRevoked) && (
+            <Card className="p-4 mt-4">
+              <div className="text-sm font-medium text-text mb-3">📝 你提交的信息</div>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-xs text-text-muted">昵称：</span>
+                  <span className="text-sm text-text ml-2">{visitorRecord.nickname}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted">性别：</span>
+                  <span className="text-sm text-text ml-2">
+                    {visitorRecord.gender === 'male' ? '男' : '女'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-text-muted">微信号：</span>
+                  <span className="text-sm text-text ml-2 font-mono">{visitorRecord.wechat}</span>
+                </div>
+                {visitorRecord.bio && (
+                  <div>
+                    <span className="text-xs text-text-muted">自我介绍：</span>
+                    <p className="text-sm text-text ml-2 mt-1">{visitorRecord.bio}</p>
+                  </div>
+                )}
+                {visitorRecord.expectation && (
+                  <div>
+                    <span className="text-xs text-text-muted">交友期许：</span>
+                    <p className="text-sm text-text ml-2 mt-1">{visitorRecord.expectation}</p>
+                  </div>
+                )}
+                {visitorRecord.photos && visitorRecord.photos.length > 0 && (
+                  <div>
+                    <span className="text-xs text-text-muted">个人照片：</span>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {visitorRecord.photos.map((photo, index) => (
+                        <div key={index} className="aspect-square rounded-lg overflow-hidden">
+                          <ImagePreview
+                            src={photo}
+                            alt={`我的照片${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
       )}
 
