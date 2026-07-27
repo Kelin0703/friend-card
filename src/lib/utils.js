@@ -81,6 +81,21 @@ export const getVisitorRecord = async (ownerId, visitorId) => {
   return data
 }
 
+export const checkWechatDuplicate = async (ownerId, wechat) => {
+  const { data, error } = await supabase
+    .from('visitors')
+    .select('id')
+    .eq('owner_id', ownerId)
+    .eq('wechat', wechat)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Check wechat duplicate error:', error)
+    return null
+  }
+  return data
+}
+
 export const submitVisitorInfo = async (visitorData) => {
   const { data, error } = await supabase
     .from('visitors')
