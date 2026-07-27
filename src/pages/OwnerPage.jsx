@@ -21,7 +21,9 @@ import {
   copyToClipboard,
   formatTime,
   resetOwnerData,
-  regenerateLinkId,
+  getLinksByOwner,
+  updateLinkStatus,
+  createLink,
 } from '../lib/utils'
 
 const tabs = [
@@ -46,8 +48,9 @@ export default function OwnerPage() {
   const [bio, setBio] = useState('')
   const [expectation, setExpectation] = useState('')
   const [photos, setPhotos] = useState([])
-  const [linkStatus, setLinkStatus] = useState('active')
-  const [linkId, setLinkId] = useState('')
+
+  const [links, setLinks] = useState([])
+  const [showHistoryLinks, setShowHistoryLinks] = useState(false)
 
   const [visitors, setVisitors] = useState([])
   const [visitorsLoading, setVisitorsLoading] = useState(false)
@@ -69,6 +72,7 @@ export default function OwnerPage() {
       if (data) {
         setOwner(data)
         fillFormData(data)
+        await loadLinks()
       } else {
         initNewOwner()
       }
@@ -78,9 +82,13 @@ export default function OwnerPage() {
     setLoading(false)
   }
 
+  const loadLinks = async () => {
+    if (!owner?.id) return
+    const data = await getLinksByOwner(owner.id)
+    setLinks(data)
+  }
+
   const initNewOwner = () => {
-    const newLinkId = generateId().slice(0, 8)
-    setLinkId(newLinkId)
   }
 
   const fillFormData = (data) => {
@@ -90,8 +98,6 @@ export default function OwnerPage() {
     setBio(data.bio || '')
     setExpectation(data.expectation || '')
     setPhotos(data.photos || [])
-    setLinkStatus(data.link_status || 'active')
-    setLinkId(data.link_id || '')
   }
 
   const validateForm = () => {
@@ -122,8 +128,6 @@ export default function OwnerPage() {
         bio: bio.trim(),
         expectation: expectation.trim(),
         photos,
-        link_id: linkId,
-        link_status: linkStatus,
       }
 
       let result
@@ -134,6 +138,7 @@ export default function OwnerPage() {
         if (result) {
           setOwnerId(result.id)
           setOwner(result)
+          await loadLinks()
         }
       }
 
@@ -151,7 +156,7 @@ export default function OwnerPage() {
     }
   }
 
-  const handleCopyLink = async () => {
+  const handleCopyLink = async (linkId) => {
     if (!linkId) return
     const link = `${window.location.origin}${window.location.pathname}#/u/${linkId}`
     const success = await copyToClipboard(link)
@@ -160,58 +165,39 @@ export default function OwnerPage() {
     }
   }
 
-  const handleCloseLink = async () => {
-    if (!window.confirm('确认关闭后任何人无法访问该链接，访客记录保留。确定要关闭吗？')) return
+  const handleToggleLink = async (linkId, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'closed' : 'active'
+    const action = newStatus === 'active' ? '开启' : '关闭'
+
+    if (!window.confirm(`确定要${action}该链接吗？`)) return
 
     setSaving(true)
     try {
-      const result = await updateOwner(owner.id, { link_status: 'closed' })
+      const result = await updateLinkStatus(linkId, newStatus)
       if (result) {
-        setLinkStatus('closed')
-        setOwner(result)
-        alert('链接已关闭')
+        setLinks(links.map((l) => (l.link_id === linkId ? result : l)))
+        alert(`链接已${action}`)
       }
     } catch (err) {
-      console.error('Close link error:', err)
+      console.error('Toggle link error:', err)
       alert('操作失败，请重试')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleOpenLink = async () => {
-    if (!window.confirm('确定要重新开启分享链接吗？')) return
+  const handleCreateNewLink = async () => {
+    if (!window.confirm('生成新链接后，旧链接保持不变。确定要生成新链接吗？')) return
 
     setSaving(true)
     try {
-      const result = await updateOwner(owner.id, { link_status: 'active' })
+      const result = await createLink(owner.id)
       if (result) {
-        setLinkStatus('active')
-        setOwner(result)
-        alert('链接已重新开启')
-      }
-    } catch (err) {
-      console.error('Open link error:', err)
-      alert('操作失败，请重试')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleRegenerateLink = async () => {
-    if (!window.confirm('生成新链接后，旧链接将立即失效，访客记录保留。确定要生成新链接吗？')) return
-
-    setSaving(true)
-    try {
-      const result = await regenerateLinkId(owner.id)
-      if (result) {
-        setLinkId(result.newLinkId)
-        setLinkStatus('active')
-        setOwner(result)
+        setLinks((prev) => [result, ...prev])
         alert('新链接已生成')
       }
     } catch (err) {
-      console.error('Regenerate link error:', err)
+      console.error('Create link error:', err)
       alert('操作失败，请重试')
     } finally {
       setSaving(false)
@@ -261,6 +247,9 @@ export default function OwnerPage() {
     }
   }
 
+  const activeLinks = links.filter((l) => l.status === 'active')
+  const closedLinks = links.filter((l) => l.status === 'closed')
+
   if (loading) {
     return (
       <div className="page-container flex items-center justify-center min-h-screen">
@@ -279,42 +268,69 @@ export default function OwnerPage() {
 
       {activeTab === 'edit' && (
         <div className="px-5 pb-8">
-          {linkId && (
+          {(activeLinks.length > 0 || closedLinks.length > 0) && (
             <Card className="mb-5 p-4 bg-primary-50 border-0">
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${linkStatus === 'active' ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className={`text-sm font-medium ${linkStatus === 'active' ? 'text-green-600' : 'text-red-500'}`}>
-                  {linkStatus === 'active' ? '链接正常启用中' : '链接已关闭'}
-                </span>
-              </div>
-              {linkStatus === 'active' ? (
-                <>
-                  <div className="bg-white rounded-full px-4 py-3 text-xs text-text-muted font-mono mb-3 break-all">
-                    {`${window.location.origin}${window.location.pathname}#/u/${linkId}`}
+              <div className="text-sm font-medium text-primary-700 mb-3">链接管理</div>
+
+              {activeLinks.map((link) => (
+                <div key={link.link_id} className="bg-white rounded-xl p-3 mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-xs text-green-600 font-medium">当前链接</span>
                   </div>
-                  <Button block onClick={handleCopyLink}>
-                    📋 一键复制链接
-                  </Button>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <Button variant="secondary" block onClick={handleCloseLink} disabled={saving}>
-                      关闭链接
+                  <div className="bg-surface-muted rounded-full px-4 py-2 text-xs text-text-muted font-mono mb-3 break-all">
+                    {`${window.location.origin}${window.location.pathname}#/u/${link.link_id}`}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="small" block onClick={() => handleCopyLink(link.link_id)}>
+                      复制
                     </Button>
-                    <Button variant="outline" block onClick={handleRegenerateLink} disabled={saving}>
-                      生成新链接
+                    <Button size="small" variant="secondary" block onClick={() => handleToggleLink(link.link_id, link.status)} disabled={saving}>
+                      关闭
                     </Button>
                   </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-text-muted mb-3">当前链接已失效</p>
-                  <Button variant="primary" block onClick={handleOpenLink} disabled={saving}>
-                    重新开启链接
-                  </Button>
-                  <Button variant="outline" block onClick={handleRegenerateLink} disabled={saving} className="mt-2">
-                    生成新链接
-                  </Button>
-                </>
+                </div>
+              ))}
+
+              {closedLinks.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowHistoryLinks(!showHistoryLinks)}
+                    className="flex items-center gap-1 text-xs text-text-muted mb-2"
+                  >
+                    <span>历史链接（{closedLinks.length}个）</span>
+                    <span className={`transition-transform ${showHistoryLinks ? 'rotate-180' : ''}`}>▼</span>
+                  </button>
+                  {showHistoryLinks && (
+                    <div className="space-y-2">
+                      {closedLinks.map((link) => (
+                        <div key={link.link_id} className="bg-white rounded-xl p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500" />
+                            <span className="text-xs text-red-500 font-medium">已关闭</span>
+                            <span className="text-xs text-text-light ml-auto">{formatTime(link.created_at)}</span>
+                          </div>
+                          <div className="bg-surface-muted rounded-full px-4 py-2 text-xs text-text-muted font-mono mb-3 break-all">
+                            {`${window.location.origin}${window.location.pathname}#/u/${link.link_id}`}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="small" variant="outline" block onClick={() => handleCopyLink(link.link_id)}>
+                              复制
+                            </Button>
+                            <Button size="small" block onClick={() => handleToggleLink(link.link_id, link.status)} disabled={saving}>
+                              重新开启
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
+
+              <Button variant="outline" block onClick={handleCreateNewLink} disabled={saving} className="mt-3">
+                + 生成新链接
+              </Button>
             </Card>
           )}
 
@@ -366,7 +382,7 @@ export default function OwnerPage() {
               photos={photos}
               onChange={setPhotos}
               maxPhotos={3}
-              ownerId={owner?.id || linkId}
+              ownerId={owner?.id || 'new'}
             />
           </div>
 
