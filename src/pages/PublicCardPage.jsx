@@ -15,6 +15,7 @@ import {
   submitVisitorInfo,
   getVisitorId,
   copyToClipboard,
+  checkWechatDuplicate,
 } from '../lib/utils'
 
 const genderOptions = [
@@ -73,6 +74,18 @@ export default function PublicCardPage() {
       alert('请输入微信号')
       return false
     }
+    if (!bio.trim()) {
+      alert('请输入自我介绍')
+      return false
+    }
+    if (!expectation.trim()) {
+      alert('请输入交友期许')
+      return false
+    }
+    if (photos.length === 0) {
+      alert('请至少上传一张个人照片')
+      return false
+    }
     return true
   }
 
@@ -81,6 +94,14 @@ export default function PublicCardPage() {
 
     setSubmitting(true)
     try {
+      // 检查微信号是否已经提交过
+      const existing = await checkWechatDuplicate(owner.id, wechat.trim())
+      if (existing) {
+        alert('该微信号已经提交过信息，无需重复提交')
+        setSubmitting(false)
+        return
+      }
+
       const visitorId = getVisitorId()
       const visitorData = {
         owner_id: owner.id,
