@@ -268,9 +268,19 @@ export default function OwnerPage() {
 
       {activeTab === 'edit' && (
         <div className="px-5 pb-8">
-          {(activeLinks.length > 0 || closedLinks.length > 0) && (
+          {owner?.id && (
             <Card className="mb-5 p-4 bg-primary-50 border-0">
               <div className="text-sm font-medium text-primary-700 mb-3">链接管理</div>
+
+              {links.length === 0 && (
+                <div className="text-center py-6">
+                  <div className="text-3xl mb-2">🔗</div>
+                  <p className="text-xs text-text-muted mb-3">还没有分享链接</p>
+                  <Button size="small" onClick={handleCreateNewLink} disabled={saving}>
+                    生成分享链接
+                  </Button>
+                </div>
+              )}
 
               {activeLinks.map((link) => (
                 <div key={link.link_id} className="bg-white rounded-xl p-3 mb-3">
