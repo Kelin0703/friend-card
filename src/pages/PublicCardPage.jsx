@@ -427,6 +427,7 @@ export default function PublicCardPage() {
         />
         <TextArea
           label="自我介绍"
+          required
           placeholder="简单介绍一下自己吧"
           value={bio}
           onChange={setBio}
@@ -434,6 +435,7 @@ export default function PublicCardPage() {
         />
         <TextArea
           label="交友期许"
+          required
           placeholder="你期待什么样的朋友？"
           value={expectation}
           onChange={setExpectation}
@@ -442,6 +444,7 @@ export default function PublicCardPage() {
         <div className="mb-5">
           <label className="block mb-2 text-text">
             个人照片（最多3张）
+            <span className="text-status-danger ml-1">*</span>
           </label>
           <PhotoUpload
             photos={photos}
@@ -486,6 +489,7 @@ export default function PublicCardPage() {
         />
         <TextArea
           label="自我介绍"
+          required
           placeholder="简单介绍一下自己吧"
           value={bio}
           onChange={setBio}
@@ -493,6 +497,7 @@ export default function PublicCardPage() {
         />
         <TextArea
           label="交友期许"
+          required
           placeholder="你期待什么样的朋友？"
           value={expectation}
           onChange={setExpectation}
@@ -501,6 +506,7 @@ export default function PublicCardPage() {
         <div className="mb-5">
           <label className="block mb-2 text-text">
             个人照片（最多3张）
+            <span className="text-status-danger ml-1">*</span>
           </label>
           <PhotoUpload
             photos={photos}
