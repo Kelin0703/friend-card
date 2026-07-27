@@ -108,6 +108,7 @@ export default function PublicCardPage() {
       const visitorData = {
         owner_id: owner.id,
         visitor_id: visitorId,
+        link_id: linkId,
         nickname: nickname.trim(),
         gender,
         wechat: wechat.trim(),
