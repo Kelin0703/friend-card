@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, STORAGE_BUCKET } from '../lib/supabase'
+import ImagePreview from './ImagePreview'
 
 export default function PhotoUpload({
   photos = [],
@@ -107,16 +108,16 @@ export default function PhotoUpload({
       {photos.map((photo, index) => (
         <div
           key={index}
-          className="relative aspect-square rounded-xl overflow-hidden bg-surface-hover group"
+          className="relative aspect-square rounded-xl overflow-hidden bg-surface-hover"
         >
-          <img
+          <ImagePreview
             src={photo}
             alt={`照片${index + 1}`}
             className="w-full h-full object-cover"
           />
           <button
             onClick={() => handleDelete(index)}
-            className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full text-sm flex items-center justify-center hover:bg-black/80 transition-colors"
           >
             ×
           </button>
