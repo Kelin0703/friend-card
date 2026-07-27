@@ -374,7 +374,7 @@ export default function OwnerPage() {
           </Button>
           {owner?.id && (
             <Button variant="danger" block onClick={handleResetData} disabled={saving} className="mt-3">
-              清空资料
+              重置资料
             </Button>
           )}
         </div>
